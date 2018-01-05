@@ -26,11 +26,11 @@ The experiments on real-world community detection are based on the Snap graphs w
 
 ``cd multiscalegnn``
 
-```python snap.py --graph 'youtube' --data_dir './../data/'```
+```python snap.py --graph 'dblp' --data_dir './../data/'```
 
 ## References
 
-[1][Kipf & Welling, Semi-Supervised Classification with Graph Convolutional Networks, 2016](https://arxiv.org/abs/1705.08415)
+[1][J. Bruna and L. Li, Community Detection with Graph Neural Networks, 2017.](https://arxiv.org/abs/1705.08415)
 
-[2][Sen et al., Collective Classification in Network Data, AI Magazine 2008](http://snap.stanford.edu/)
+[2][Stanford Network Analysis Project.](http://snap.stanford.edu/)
 
