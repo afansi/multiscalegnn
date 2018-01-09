@@ -291,6 +291,7 @@ def train(epoch=1):
     global running_avg
 
     t = time.time()
+    tb = t
 
     model.train()
 
@@ -299,6 +300,7 @@ def train(epoch=1):
     totloss = 0
     numiters = min(trsize, opt.maxepochsize)
     for l in range(0, numiters):
+
         ii = []
         Wtmp, inp, target = loadexample(shuffle[l], opt.J, False)
 
@@ -329,6 +331,12 @@ def train(epoch=1):
             print('##### Epoch {}: Iter {}/{} ####'.format(epoch, l, numiters))
             print('running_avg: ', running_avg)
             print('confusion: ', confusion)
+            tb1 = time.time()
+            print('time: {:.4f}s ({:.4f}s/batch)'.format(
+                (tb1 - tb), (tb1 - tb) / 50)
+            )
+            tb = tb1
+
         loss.backward()
         optimizer.step()
 
@@ -353,6 +361,8 @@ def test(epoch=1):
     global confusion
 
     t = time.time()
+    tb = t
+
     model.eval()
 
     numiters = min(tesize, opt.maxtestsize)
@@ -382,6 +392,11 @@ def test(epoch=1):
         if l % 50 == 0:
             print('##### Epoch {}: Iter {}/{} ####'.format(epoch, l, numiters))
             print('confusion: ', confusion)
+            tb1 = time.time()
+            print('time: {:.4f}s ({:.4f}s/batch)'.format(
+                (tb1 - tb), (tb1 - tb) / 50)
+            )
+            tb = tb1
 
     print(confusion)
     testAccuracy = accuracyFromConfusion(confusion) * 100
