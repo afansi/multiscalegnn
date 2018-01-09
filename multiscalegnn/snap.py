@@ -173,22 +173,32 @@ def loadexample(ind, J, test=False):
         W, target, _, _ = extract_subgraph(
             Community, goodcross_test[ind], Neighbors)
 
-    d = W.sum(0)
-    Dfwd = torch.diag(d)
+    # W: is the adjacent Matrix of the subgraph
+    # target:
+    #   target[0] == 1: w belongs to the 2nd cmty and not the first
+    #   target[1] == 1: w belongs to the 1st cmty and not the second
+    #   target[2] == 1: w belongs to both the 1st and 2nd cmties.
+
+    d = W.sum(0)  # degree of each node
+    Dfwd = torch.diag(d)  # Diagonal Matrix based on the degree of each node
     QQ = W.clone()
     N = W.size(0)
 
+    # I, W, W^2, W^4,...,W^(2^(J-2)), D, Avg_Degree
     WW = torch.Tensor(N, N, J + 2).fill_(0)
     WW[:, :, 0] = torch.eye(N)
     for j in range(J - 1):
         WW[:, :, j + 1].copy_(QQ)
         QQ = torch.mm(QQ, QQ)
 
+    # D: Copy of the Diagonal matrix based on the degree of each node
     WW[:, :, J].copy_(Dfwd.view(N, N))
+
+    # Avg_Degree: Average degree information
     WW[:, :, J + 1].fill_(1 / N)
 
     WW = WW.view(1, N, N, J + 2)
-    inp = d.view(1, 1, N, 1)
+    inp = d.view(1, 1, N, 1)  # degree of each node
 
     target = Variable(target)
     WW = Variable(WW)

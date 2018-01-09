@@ -14,6 +14,7 @@ class GMul2(nn.Module):
     def forward(self, x, W):
         # x is a tensor of size (bs, p1, N, 1)
         # W is a tensor of size (bs, N, N, J)
+        # Output: a tensor of size (bs, J*p1, N, 1)
         res = []
         for j in range(W.size(3)):
             res.append(
@@ -27,7 +28,7 @@ class GNNAtomic(nn.Module):
 
     def __init__(self, featuremaps, J, last=False):
         super(GNNAtomic, self).__init__()
-        self.featuremaps = featuremaps
+        self.featuremaps = featuremaps  # inp_c, mid_c, out_c
         self.J = J
         self.last = last
         self.gmul = GMul2()
@@ -36,22 +37,26 @@ class GNNAtomic(nn.Module):
         self.batch_norm = nn.BatchNorm2d(2 * featuremaps[2])
 
     def forward(self, x, W):
-        x1 = self.gmul(x, W)
-        y1 = F.relu(self.conv1(x1))
-        y2 = self.conv2(x1)
+        # x is a tensor of size (bs, inp_c, N, 1)
+        # W is a tensor of size (bs, N, N, J)
+        x1 = self.gmul(x, W)  # x1: (bs, J*inp_c, N, 1)
+        y1 = F.relu(self.conv1(x1))  # y1: (bs, out_c, N, 1)
+        y2 = self.conv2(x1)  # y2: (bs, out_c, N, 1)
+
+        # z: (bs, 2 * out_c, N, 1)
         z = self.batch_norm(torch.cat([y1, y2], dim=1))
 
         if not self.last:
-            return z, W
+            return z, W  # z: (bs, 2 * out_c, N, 1), (bs, N, N, J)
         else:
-            return z, W
+            return z, W  # z: (bs, 2 * out_c, N, 1), (bs, N, N, J)
 
 
 class GNNMultiClass(nn.Module):
 
     def __init__(self, featuremaps, J, NClasses, N):
         super(GNNMultiClass, self).__init__()
-        self.featuremaps = featuremaps
+        self.featuremaps = featuremaps  # inp_c, mid_c, out_c
         self.J = J
         self.NClasses = NClasses
         self.N = N
@@ -59,10 +64,12 @@ class GNNMultiClass(nn.Module):
         self.conv1 = nn.Conv2d(J * featuremaps[0], NClasses, 1, 1)
 
     def forward(self, x, W):
-        x1 = self.gmul(x, W)
-        y1 = self.conv1(x1)
-        z = torch.transpose(y1.squeeze(), 1, 0)
-        return z
+        # x is a tensor of size (bs, inp_c, N, 1)
+        # W is a tensor of size (bs, N, N, J)
+        x1 = self.gmul(x, W)  # x1: (bs, J*inp_c, N, 1)
+        y1 = self.conv1(x1)   # y1: (bs, NClasses, N, 1)
+        z = torch.transpose(y1.squeeze(), 1, 0)  # z: (bs, N, NClasses)
+        return z  # or (N, NClasses) if bs==1 (usually, it is the case)
 
 
 class IndexModule(nn.Module):
@@ -82,9 +89,9 @@ class GNNModular(nn.Module):
 
     def __init__(
             self,
-            featuremap_in,
-            featuremap_mi,
-            featuremap_end,
+            featuremap_in,   # n_in, n_mi, n_out
+            featuremap_mi,   # 2 * n_out, n_mi_1, n_out
+            featuremap_end,  # 2 * n_out, n_mi_2, n_out_2
             NLayers,
             J,
             NClasses,
@@ -115,4 +122,4 @@ class GNNModular(nn.Module):
                 x, W = l(x, W)
 
         z = self.list_modules[-1](x, W)
-        return z
+        return z  # z: (bs, N, NClasses) or (N, NClasses) if bs==1
